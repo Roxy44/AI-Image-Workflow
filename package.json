@@ -1,0 +1,42 @@
+{
+    "name": "ai-image-workflow",
+    "private": true,
+    "type": "module",
+    "version": "0.0.1",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "concurrently -n api,web -c cyan,magenta \"yarn workspace @aiwf/api dev\" \"yarn workspace @aiwf/web dev\"",
+        "build": "yarn workspace @aiwf/shared typecheck && yarn workspace @aiwf/api build && yarn workspace @aiwf/web build",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "typecheck": "yarn workspace @aiwf/shared typecheck && yarn workspace @aiwf/api typecheck && yarn workspace @aiwf/web typecheck",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "engines": {
+        "node": ">=20"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@types/node": "26.4.1",
+        "concurrently": "9.2.1",
+        "eslint": "10.9.1",
+        "eslint-config-prettier": "10.1.8",
+        "eslint-import-resolver-typescript": "4.4.5",
+        "eslint-plugin-import": "2.32.0",
+        "eslint-plugin-react": "7.37.5",
+        "eslint-plugin-react-hooks": "7.1.1",
+        "eslint-plugin-react-refresh": "0.5.6",
+        "globals": "17.12.0",
+        "prettier": "3.9.6",
+        "typescript": "5.9.3",
+        "typescript-eslint": "8.69.0",
+        "vite": "8.2.2",
+        "vitest": "4.1.11"
+    }
+}

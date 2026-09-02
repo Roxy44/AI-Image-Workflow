@@ -1,0 +1,48 @@
+---
+description: How to record a lesson after a bug, regression, or rewrite, and when to promote a recurring lesson into a project rule. Use when a failure was just fixed or when a review found a systemic problem.
+alwaysApply: false
+---
+
+# Retrospective notes
+
+Lessons live in `.cursor/project-memory/lessons/` as `YYYY-MM-DD-short-slug.md`, written
+in the project's **communication language** (see `project/stack.mdc`). Section titles in
+those folders must match that language — if you still see English stubs in a `ru`
+project, replace them from `docs/ru/project-memory/` (onboarding Step 3).
+
+## When to write one
+
+- A bug or regression was fixed and the cause was not obvious.
+- An assumption about the codebase turned out wrong and cost a rewrite.
+- A review or the user corrected an approach in a way that will recur.
+- A non-obvious environment or tooling trap cost real time.
+
+## When not to
+
+Typos, one-off mistakes with no pattern, anything already covered by an existing rule, or
+a note that only restates the diff. Noise here is worse than nothing — every entry is
+something a future agent may read.
+
+## Format
+
+Keep it under 20 lines. Facts, not narrative.
+
+```markdown
+# <short title>
+
+- **Symptom:** what was observed.
+- **Cause:** the actual root cause, not the first suspect.
+- **Fix:** what was changed, with the file paths.
+- **Rule of thumb:** the one sentence a future agent needs.
+- **Scope:** where this applies (module, layer, whole repo).
+```
+
+## Promotion
+
+- Three or more entries pointing at the same rule of thumb → propose a project rule
+  instead of a fourth note.
+- A promoted rule becomes a small file in `.cursor/rules/project/` with a precise
+  `description` and `globs`, and `alwaysApply: false` unless it is a true always-on
+  prohibition. Adding to the always-on set is a deliberate cost — say so when proposing.
+- When a lesson is promoted, link the rule from the lesson entry and stop duplicating it.
+- Never edit `constitution.mdc` to add project specifics. It stays portable.

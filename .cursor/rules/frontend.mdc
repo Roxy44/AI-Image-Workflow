@@ -1,0 +1,76 @@
+---
+description: Frontend architecture — component boundaries, state, data fetching, styling, accessibility, performance. Applies to UI files.
+globs: ['**/*.{tsx,jsx,vue,svelte}', '**/*.{css,scss,sass,less}', '**/components/**', '**/pages/**', '**/app/**']
+alwaysApply: false
+---
+
+# Frontend
+
+Architecture for UI code. Form rules are in `code-style.mdc`. Honor constitution
+**P-6 KISS**, **P-7 DRY**, **P-8 SOLID**. Deeper patterns and directory strategies:
+`docs/methodologies/frontend.md` — open it only when the structure of a new feature or
+layer is actually in question. BEM / naming trade-offs:
+`docs/methodologies/design-principles.md`.
+
+## Components
+
+- Function components only. Follow the Rules of Hooks: top level of a component or a
+  hook, never inside loops, conditions, or plain functions.
+- One responsibility per component. Prefer composition over a component that branches on
+  many flags.
+- Keep files export-clean: a module exporting a component SHOULD NOT also export
+  unrelated utilities; move them to a sibling `utils.ts`.
+- Presentation and data access stay separable: a component that renders SHOULD NOT also
+  own transport details.
+
+## State
+
+- Choose the narrowest scope that works: local state → lifted state → shared store. Do
+  not reach for a global store for state one subtree needs.
+- Derive instead of duplicating. Two states that must agree are a bug waiting to happen.
+- Server data is not UI state: cache it with the project's data layer rather than copying
+  it into component state.
+- Do not introduce a second state library when one is already in use (**W-6**).
+
+## Data fetching
+
+- Handle all three states explicitly: loading, empty, error. An unhandled error state is
+  an incomplete feature.
+- Never trust a response shape blindly — validate or type-guard at the boundary
+  (constitution **S-2**).
+- Cancel or ignore stale responses on unmount and on rapid re-requests.
+
+## Styling
+
+- Detect the project's approach (Tailwind, CSS Modules, SCSS, CSS-in-JS) and stay with
+  it. Never add a second system without an explicit ask.
+- Inline `style` only for values that are genuinely dynamic.
+- With CSS Modules, reference classes through the module object; never hardcode generated
+  class names.
+- Spacing, color, and typography come from the project's tokens or scale, not ad-hoc
+  values.
+- **CSS naming / BEM:** follow `CSS naming` in `project/stack.mdc`. Never mix systems.
+  - Styling is Tailwind / UnoCSS / CSS-in-JS (styled-components, Emotion, …) → treat as
+    `n/a`: use only that system's idioms. Do **not** invent BEM (`block__el--mod`) class
+    names alongside utility or styled APIs — even if `CSS naming` was left wrong; fix
+    `stack.mdc` to `n/a` when you notice the mismatch.
+  - `bem` — only with classic CSS / SCSS / CSS Modules (or hybrid custom classes). Use
+    Block__Element--modifier (or the project's documented BEM dialect). Details:
+    `docs/methodologies/design-principles.md`.
+  - `none` / `n/a` — do not invent BEM.
+  - `TBD` and the task adds **classic** named CSS classes (not utilities / not
+    `styled.*`) — ask once (`bem` / `existing` / `none`), record, then proceed. If the
+    task only touches Tailwind/CSS-in-JS, write `n/a` and do not ask.
+
+## Accessibility
+
+- Semantic elements first; `div` with a click handler is not a button.
+- Interactive elements are keyboard reachable and have an accessible name.
+- Images carry meaningful `alt`; decorative images carry empty `alt`.
+- Never convey state by color alone.
+
+## Performance
+
+- Fix the cause before adding memoization. Profile, do not guess.
+- Lists need stable keys, never array indexes for reorderable data.
+- Split heavy, rarely used views with lazy loading when the project supports it.

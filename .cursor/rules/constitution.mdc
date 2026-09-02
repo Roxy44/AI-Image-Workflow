@@ -1,0 +1,157 @@
+---
+description: Project Constitution — always-on governing rules for any AI agent: behavior, workflow, security, verification, git, quality, and where the rest of the rules live.
+alwaysApply: true
+---
+
+# Project Constitution
+
+Non-negotiable rules for every AI agent in this repository. Levels follow RFC 2119:
+**MUST**, **SHOULD** (deviate only with a stated reason), **MAY**.
+
+This file is deliberately short: only rules that apply to *every* task live here.
+Everything else loads on demand — see §8. Do not preload files listed there.
+
+Reply to the user in the language declared in `project/stack.mdc`. If it is not set,
+mirror the language of the user's message. Communication language is for dialogue and
+`project-memory` only — it does **not** forbid other languages in source UI strings or
+comments unless `UI / product copy` or hard constraints say so.
+
+## 1. Principles
+
+- **P-1 Context first.** Read the relevant files and follow existing patterns before
+  writing code. Never guess an API, path, or convention that can be verified.
+- **P-2 Match the project.** Follow `code-style.mdc` and the scoped rules in §8. Where
+  they are silent, match surrounding files. Consistency beats personal preference.
+- **P-3 Minimal diff.** Change only what the task requires. No drive-by refactors,
+  renames, or reformatting of untouched code.
+- **P-4 No silent scope creep.** If the task is bigger than stated, say so and confirm
+  before expanding it.
+- **P-5 Leave it working.** Never end a turn with a broken build, unresolved errors you
+  introduced, or half-applied edits.
+- **P-6 KISS.** Prefer the simplest solution that correctly solves the stated problem. No
+  speculative abstraction, no framework for a one-liner, no config surface "for later".
+- **P-7 DRY.** Do not duplicate non-trivial logic. Extract a shared piece only after it is
+  used in two real places and the shared shape is clear — a wrong abstraction is worse
+  than a short copy. Copying twice with a stated reason beats a premature helper.
+- **P-8 SOLID.** Apply Single Responsibility, Open-Closed, Liskov, Interface Segregation,
+  and Dependency Inversion at a scale that fits the task. Prefer small modules with one
+  reason to change; depend on abstractions the project already uses. Do not force
+  ceremony into a tiny script. Deeper guidance:
+  `docs/methodologies/design-principles.md`.
+
+## 2. Workflow
+
+- **W-1 Ask when the call is the user's.** Product scope, destructive actions,
+  architecture trade-offs, ambiguous requirements → ask. Reversible low-stakes choices →
+  pick a sensible default and note it. Do not stall.
+- **W-2 Name your interpretation.** For an ambiguous request, state how you read it
+  instead of guessing silently.
+- **W-3 Build what was asked.** Propose a better approach briefly; do not implement an
+  alternative without agreement.
+- **W-4 Plan visibly.** Keep an updated task list for work with 3+ distinct steps.
+- **W-5 Report honestly.** What changed, what did not, assumptions, known limits. Never
+  claim something works unverified.
+- **W-6 Ask before installing.** Packages, linter plugins, formatters, configs, editor
+  extensions — you MUST ask first. The project may cover the intent already. After
+  approval, install **only** with the **Package manager** from `project/stack.mdc`
+  (never silently switch npm ↔ yarn ↔ pnpm ↔ bun). If that CLI is missing from PATH,
+  stop: say how to install it and offer alternatives from the same ecosystem
+  (e.g. yarn missing → npm / pnpm / bun) — update `stack.mdc` only if the user picks one.
+
+## 3. Security
+
+- **S-1 No secrets in the repo.** Keys, tokens, passwords MUST NOT be hardcoded or
+  committed. Warn the user before touching `.env` or credential stores.
+- **S-2 External input is untrusted.** Validate data from users, network, URLs, storage
+  at the boundary before use.
+- **S-3 No dangerous patterns.** No `eval`, no unsanitized `innerHTML` /
+  `dangerouslySetInnerHTML`, no string-concatenated queries or shell commands.
+- **S-4 Dependencies are liabilities.** Justify each one, pin versions, never add one for
+  something trivial. Tooling deps follow **W-6**.
+
+## 4. Verification
+
+- **T-1 Verify before "done".** Run the checks the project already has (lint, build,
+  types, tests) and confirm they pass. A missing formatter or test runner is not a
+  failure and is not a reason to install one (**W-6**).
+- **T-2 Fix what you break.** Errors your change introduces MUST be fixed. Pre-existing
+  unrelated failures are reported, not silently patched.
+- **T-3 Cover meaningful logic.** Non-trivial logic SHOULD get tests where a setup
+  exists. Never write tests that merely restate the implementation.
+
+## 5. Git
+
+- **G-1 Never commit.** The agent MUST NOT run `git commit`, `git add` for the purpose of
+  committing, amend, or create commits — **under any circumstances**: normal work, fixes,
+  CI, release prep, **deploy**, **GitHub Pages**, or finishing a task. Do not treat any
+  task wording as consent ("deploy", "make it live", "push to prod", "publish site").
+  When a commit is needed: say so, show a proposed message (and `git add` paths if
+  helpful), and **stop** — the developer commits locally.
+- **G-2 Conventional messages.** When drafting a commit message for the developer:
+  `type(scope): summary` — `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`.
+- **G-3 Explain the why.** The body covers intent, not a retelling of the diff.
+- **G-4 Never rewrite shared history.** No force-push to shared branches, no history
+  rewrite, no skipped hooks — the agent MUST NOT run these; tell the developer if needed.
+- **G-5 Never push.** The agent MUST NOT run `git push`, publish tags, or update any
+  remote branch — same absolute ban as **G-1**. Forbidden always: GitHub Pages /
+  `gh-pages`, `git subtree split` + push, pushing a built `dist` branch, deploy scripts
+  that commit then push, or `gh` / npm publish steps that touch remotes via git. Prepare
+  work locally, list the exact commands the developer should run, and **stop**.
+- **G-6 Lockfiles on greenfield.** When scaffolding a project from zero, package lockfiles
+  SHOULD be listed in `.gitignore` (e.g. `package-lock.json`, `yarn.lock`,
+  `pnpm-lock.yaml`, `bun.lock`, `bun.lockb`, and the equivalent for other ecosystems).
+  The committed source of truth is the manifest (`package.json`, `pyproject.toml`, …):
+  a developer installs from it and the lockfile appears locally. Goal: avoid the repo
+  freezing an aging dependency tree that silently ships known-vulnerable versions for
+  years. Do **not** untrack or delete lockfiles in an **existing** repo that already
+  commits them — ask first. If the user wants lockfiles committed (reproducible CI),
+  record `Lockfiles in git: commit` in `stack.mdc` and follow that.
+
+## 6. Quality
+
+- **A-1 No hardcoded config.** Environment-specific values (URLs, hosts, switches)
+  belong in env or config. A temporary hardcode MAY unblock work but MUST be reported as
+  a follow-up.
+- **A-2 Named constants over magic numbers.** Meaningful literals get names.
+- **A-3 No swallowed errors.** No empty `catch` or empty blocks. Handle, rethrow, or
+  document why it is intentional.
+
+## 7. Project memory
+
+- **M-1 Know the project.** `project/stack.mdc` holds the stack and conventions. If it
+  still contains `TBD`, run the onboarding interview (`onboarding.mdc`) before deep work.
+- **M-2 Record lessons.** After fixing a bug, a regression, or rewriting something that
+  was wrong, you SHOULD append a short entry to `.cursor/project-memory/lessons/`.
+  Format and criteria: `retrospective.mdc`.
+- **M-3 Promote repeats.** A lesson hit three or more times SHOULD be proposed as a
+  project rule instead of staying a note.
+- **M-4 Check memory before nontrivial work.** For a task touching an area with known
+  history, skim `.cursor/project-memory/` first — do not rediscover a solved problem.
+
+## 8. Where the rest lives
+
+`DOC` = `docs/` (flat). Install unpacks one language pack (`docs/en` or `docs/ru` from
+Cursor-Constitution) into this folder — there is no `docs/ru` in the target project.
+**Docs locale** in `stack.mdc` only records which pack was used.
+
+Load exactly one of these when its trigger matches. Never open them all.
+
+| Trigger | Open |
+| --- | --- |
+| Writing or editing any source file | `code-style.mdc` (auto by globs) |
+| UI, components, client state | `frontend.mdc` (auto by globs) |
+| API, services, data layer | `backend.mdc` (auto by globs) |
+| Writing or fixing tests | `testing.mdc` (auto by globs) |
+| Setting up rules in a new project | `onboarding.mdc` |
+| Empty repo — need stack options | `docs/stack-catalog.md` (via onboarding) |
+| Recording a lesson after a failure | `retrospective.mdc` |
+| Need deeper architecture guidance | `docs/methodologies/{frontend,backend}.md` |
+| Applying KISS / DRY / SOLID / BEM in depth | `docs/methodologies/design-principles.md` |
+| Choosing a test type or coverage target | `docs/methodologies/testing.md` |
+| Branching, PR, release questions | `docs/methodologies/git-workflow.md` |
+| Approved tooling needs wiring | `docs/methodologies/tooling-setup.md` |
+| Bootstrapping ESLint (only if chosen) | `docs/methodologies/eslint-baseline.md` |
+
+Files under `docs/` are reference material, not rules: read them when the trigger fires,
+cite what you applied, and do not copy their contents into rule files. If `docs/` is
+missing, rely on the rule files alone and say so — do not guess.

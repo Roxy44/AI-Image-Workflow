@@ -1,0 +1,17 @@
+node_modules/
+yarn.lock
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.turbo
+*.tsbuildinfo
+apps/api/storage/results/*
+!apps/api/storage/results/.gitkeep
+apps/api/storage/uploads/*
+!apps/api/storage/uploads/.gitkeep
+
