@@ -94,6 +94,8 @@ CLOUDFLARE_API_TOKEN=твой_токен
 
 4. Перезапусти `yarn dev`. Generate → `flux-1-schnell`. Edit → `flux-2-dev` (исходник как `input_image_0`, лучше ≤ 512×512).
 
+Один AI-вызов (Generate или Edit) обрывается по `AI_TIMEOUT_MS`, по умолчанию 3 минуты. Если нода падает с timeout — увеличь значение в `.env` и снова перезапусти API.
+
 Бесплатный план: 10 000 neurons в сутки (сброс 00:00 UTC). 429 «capacity» — очередь, имеет смысл подождать; исчерпанный лимит — нет. Параллельные Generate A/B плюс Edit съедают квоту быстро.
 
 Без ключа — `IMAGE_PROVIDER=mock`.

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULT_PORT = 3001;
-const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = 180_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 export type ImageProviderName = 'mock' | 'cloudflare';
