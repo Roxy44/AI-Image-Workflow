@@ -24,13 +24,13 @@ yarn dev
 
 ### Порты нод
 
-| Нода | Входы | Выходы |
-| --- | --- | --- |
-| Prompt | — | `text` |
-| Image Input | — | `image` |
-| Generate | `text` (обязателен) | `image` |
-| Edit | `image` (обязателен), `text` сверху (необязателен: пусто, поле в ноде или ребро от Prompt) | `image` |
-| Result | `image` | `image` (продолжение в Edit / другой Result) |
+| Нода        | Входы                                                                                      | Выходы                                       |
+| ----------- | ------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| Prompt      | —                                                                                          | `text`                                       |
+| Image Input | —                                                                                          | `image`                                      |
+| Generate    | `text` (обязателен)                                                                        | `image`                                      |
+| Edit        | `image` (обязателен), `text` сверху (необязателен: пусто, поле в ноде или ребро от Prompt) | `image`                                      |
+| Result      | `image`                                                                                    | `image` (продолжение в Edit / другой Result) |
 
 Несовместимые рёбра (`text` ↔ `image`) режутся. Типичное продолжение идеи: **Generate → Result → Edit → Result**.
 
@@ -44,22 +44,22 @@ yarn dev
 
 ## Соответствие брифу (§6–13)
 
-| Требование | Статус |
-| --- | --- |
-| FSD, логика графа не в UI-виджетах | Сделано: `apps/web/src` по слоям, движок в `packages/shared` |
-| Сценарий 1 Prompt → Generate → Result | Сделано (входит в ветвление) |
-| Обязательное ветвление Prompt → Generate A/B параллельно | Сделано; тест на два in-flight Generate |
-| Граф как данные, порты `text` / `image`, несовместимые рёбра режутся | Сделано (UI + `POST /runs`) |
-| Job: idle / queued / running / success / error | Сделано |
-| Run: `POST /api/runs` → `{ runId }`, `GET /api/runs/:id` → queued / running / completed / failed | Сделано, polling |
-| Retry failed node | Сделано |
-| Preset — сущность модели + выбор, без Preset Editor | Сделано (`preset-demo` Premium 3D, Photo) |
-| Request builder: user prompt + preset → prompt / negative / references | Сделано в `packages/shared` |
-| Loading / error / timeout | Сделано: статусы на ноде; AI-вызов обрывается по `AI_TIMEOUT_MS` |
-| Ключ не на фронте | Сделано |
-| Canvas (xyflow): add / move / connect / delete / selection / branching | Сделано (звезда) |
-| Одна реальная генерация Browser → Backend → AI → Result | Сделано: Cloudflare Workers AI; mock без ключа |
-| Сценарий 2 Image Input → Edit → Result | Сделано: upload, Edit (image + опциональный prompt), Result с выходом дальше в Edit |
+| Требование                                                                                       | Статус                                                                              |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| FSD, логика графа не в UI-виджетах                                                               | Сделано: `apps/web/src` по слоям, движок в `packages/shared`                        |
+| Сценарий 1 Prompt → Generate → Result                                                            | Сделано (входит в ветвление)                                                        |
+| Обязательное ветвление Prompt → Generate A/B параллельно                                         | Сделано; тест на два in-flight Generate                                             |
+| Граф как данные, порты `text` / `image`, несовместимые рёбра режутся                             | Сделано (UI + `POST /runs`)                                                         |
+| Job: idle / queued / running / success / error                                                   | Сделано                                                                             |
+| Run: `POST /api/runs` → `{ runId }`, `GET /api/runs/:id` → queued / running / completed / failed | Сделано, polling                                                                    |
+| Retry failed node                                                                                | Сделано                                                                             |
+| Preset — сущность модели + выбор, без Preset Editor                                              | Сделано (`preset-demo` Premium 3D, Photo)                                           |
+| Request builder: user prompt + preset → prompt / negative / references                           | Сделано в `packages/shared`                                                         |
+| Loading / error / timeout                                                                        | Сделано: статусы на ноде; AI-вызов обрывается по `AI_TIMEOUT_MS`                    |
+| Ключ не на фронте                                                                                | Сделано                                                                             |
+| Canvas (xyflow): add / move / connect / delete / selection / branching                           | Сделано (звезда)                                                                    |
+| Одна реальная генерация Browser → Backend → AI → Result                                          | Сделано: Cloudflare Workers AI; mock без ключа                                      |
+| Сценарий 2 Image Input → Edit → Result                                                           | Сделано: upload, Edit (image + опциональный prompt), Result с выходом дальше в Edit |
 
 ## Сценарий 2: Image Input и Edit Image
 
