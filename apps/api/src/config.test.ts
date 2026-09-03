@@ -10,32 +10,30 @@ describe('loadConfig', () => {
         });
 
         expect(config.imageProvider).toBe('mock');
-        expect(config.imageApiKey).toBeNull();
-        expect(config.imageApiUrl).toBe('https://fal.run/fal-ai/flux/schnell');
-        expect(config.imageEditApiUrl).toBe('https://fal.run/fal-ai/flux/dev/image-to-image');
+        expect(config.cloudflareAccountId).toBeNull();
+        expect(config.cloudflareApiToken).toBeNull();
     });
 
-    it('accepts live when IMAGE_API_KEY is set', () => {
+    it('accepts cloudflare when account id and token are set', () => {
         const config = loadConfig({
-            IMAGE_PROVIDER: 'live',
-            IMAGE_API_KEY: 'fal-key',
+            IMAGE_PROVIDER: 'cloudflare',
+            CLOUDFLARE_ACCOUNT_ID: 'acct',
+            CLOUDFLARE_API_TOKEN: 'token',
         });
 
-        expect(config.imageProvider).toBe('live');
-        expect(config.imageApiKey).toBe('fal-key');
+        expect(config.imageProvider).toBe('cloudflare');
+        expect(config.cloudflareAccountId).toBe('acct');
+        expect(config.cloudflareApiToken).toBe('token');
     });
 
-    it('uses FAL_KEY when IMAGE_API_KEY is empty', () => {
-        const config = loadConfig({
-            IMAGE_PROVIDER: 'live',
-            FAL_KEY: 'from-fal-env',
-        });
-
-        expect(config.imageApiKey).toBe('from-fal-env');
+    it('rejects cloudflare without account credentials', () => {
+        expect(() => loadConfig({ IMAGE_PROVIDER: 'cloudflare' })).toThrow(
+            /CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN/,
+        );
     });
 
-    it('rejects live without a key', () => {
-        expect(() => loadConfig({ IMAGE_PROVIDER: 'live' })).toThrow(/IMAGE_API_KEY or FAL_KEY/);
+    it('rejects unknown providers', () => {
+        expect(() => loadConfig({ IMAGE_PROVIDER: 'live' })).toThrow(/mock or cloudflare/);
     });
 });
 

@@ -4,20 +4,19 @@ import { fileURLToPath } from 'node:url';
 
 const DEFAULT_PORT = 3001;
 const DEFAULT_TIMEOUT_MS = 60_000;
-const DEFAULT_GENERATE_URL = 'https://fal.run/fal-ai/flux/schnell';
-const DEFAULT_EDIT_URL = 'https://fal.run/fal-ai/flux/dev/image-to-image';
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-export type ImageProviderName = 'mock' | 'live';
+export type ImageProviderName = 'mock' | 'cloudflare';
+
+const PROVIDERS: readonly ImageProviderName[] = ['mock', 'cloudflare'];
 
 export type ApiConfig = {
     host: string;
     port: number;
     webOrigin: string;
     imageProvider: ImageProviderName;
-    imageApiUrl: string;
-    imageEditApiUrl: string;
-    imageApiKey: string | null;
+    cloudflareAccountId: string | null;
+    cloudflareApiToken: string | null;
     aiTimeoutMs: number;
     publicDir: string;
     resultsDir: string;
@@ -55,13 +54,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     }
 
     const provider = env.IMAGE_PROVIDER ?? 'mock';
-    if (provider !== 'mock' && provider !== 'live') {
-        throw new Error(`IMAGE_PROVIDER must be mock or live, got: ${provider}`);
+    if (!isProvider(provider)) {
+        throw new Error(`IMAGE_PROVIDER must be mock or cloudflare, got: ${provider}`);
     }
 
-    const imageApiKey = firstNonEmpty(env.IMAGE_API_KEY, env.FAL_KEY);
-    if (provider === 'live' && !imageApiKey) {
-        throw new Error('IMAGE_PROVIDER=live requires IMAGE_API_KEY or FAL_KEY');
+    const cloudflareAccountId = optionalEnv(env.CLOUDFLARE_ACCOUNT_ID);
+    const cloudflareApiToken = optionalEnv(env.CLOUDFLARE_API_TOKEN);
+    if (provider === 'cloudflare' && (!cloudflareAccountId || !cloudflareApiToken)) {
+        throw new Error('IMAGE_PROVIDER=cloudflare requires CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN');
     }
 
     return {
@@ -69,9 +69,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
         port,
         webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5173',
         imageProvider: provider,
-        imageApiUrl: env.IMAGE_API_URL ?? DEFAULT_GENERATE_URL,
-        imageEditApiUrl: env.IMAGE_EDIT_API_URL ?? DEFAULT_EDIT_URL,
-        imageApiKey,
+        cloudflareAccountId,
+        cloudflareApiToken,
         aiTimeoutMs,
         publicDir: env.API_PUBLIC_DIR ?? path.join(here, '../public/references'),
         resultsDir: env.API_RESULTS_DIR ?? path.join(here, '../storage/results'),
@@ -79,14 +78,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     };
 }
 
-function firstNonEmpty(...values: Array<string | undefined>): string | null {
-    for (const value of values) {
-        const trimmed = value?.trim();
-        if (trimmed) {
-            return trimmed;
-        }
-    }
-    return null;
+function isProvider(value: string): value is ImageProviderName {
+    return (PROVIDERS as readonly string[]).includes(value);
+}
+
+function optionalEnv(value: string | undefined): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
 }
 
 function applyDotenv(text: string, env: NodeJS.ProcessEnv): void {

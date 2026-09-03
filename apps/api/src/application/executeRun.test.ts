@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createEditScenarioGraph, createMandatoryBranchingGraph } from '@aiwf/shared';
+import { createEditScenarioGraph, createMandatoryBranchingGraph, DEMO_PRESET } from '@aiwf/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { executeRun, seedRunJobs } from './executeRun';
@@ -90,7 +90,8 @@ describe('executeRun', () => {
             async generate() {
                 throw new Error('generate should not run in this test');
             },
-            async edit(_request, source) {
+            async edit(request, source) {
+                expect(request.prompt).toBe(DEMO_PRESET.mainPrompt);
                 expect(source.bytes.equals(MOCK_PNG)).toBe(true);
                 return { bytes: MOCK_PNG, mimeType: 'image/png' };
             },
@@ -124,6 +125,120 @@ describe('executeRun', () => {
         const run = store.get('run-edit');
         expect(run?.status).toBe('completed');
         expect(run?.jobs[0]?.status).toBe('success');
+    });
+
+    it('edits the image that arrived through a result node', async () => {
+        tempDir = await mkdtemp(path.join(os.tmpdir(), 'aiwf-'));
+        const graph = createMandatoryBranchingGraph();
+        const prompt = graph.nodes.find((node) => node.id === 'prompt');
+        if (!prompt) {
+            throw new Error('missing prompt');
+        }
+        prompt.data.text = 'a red cube';
+        graph.nodes.push({
+            id: 'edit-from-a',
+            kind: 'editImage',
+            position: { x: 1100, y: 80 },
+            data: { text: 'make it night' },
+        });
+        graph.edges.push({
+            id: 'result-a->edit-from-a:image',
+            source: 'result-a',
+            target: 'edit-from-a',
+            sourcePort: 'image',
+            targetPort: 'image',
+        });
+
+        const readUrls: string[] = [];
+        const generator: ImageGenerator = {
+            async generate() {
+                return { bytes: MOCK_PNG, mimeType: 'image/png' };
+            },
+            async edit(request, source) {
+                expect(request.prompt).toContain('make it night');
+                expect(source.bytes.equals(MOCK_PNG)).toBe(true);
+                return { bytes: MOCK_PNG, mimeType: 'image/png' };
+            },
+        };
+
+        const store = createMemoryRunStore();
+        store.create({
+            runId: 'run-result-edit',
+            graph,
+            presetId: 'preset-demo',
+            status: 'queued',
+            jobs: seedRunJobs(graph),
+        });
+
+        await executeRun(
+            {
+                store,
+                generator,
+                results: createFileResultStore(tempDir),
+                images: {
+                    async read(url) {
+                        readUrls.push(url);
+                        return { bytes: MOCK_PNG, mimeType: 'image/png' };
+                    },
+                },
+                timeoutMs: 5_000,
+            },
+            'run-result-edit',
+        );
+
+        const run = store.get('run-result-edit');
+        expect(run?.status).toBe('completed');
+        expect(readUrls.some((url) => url.startsWith('/results/'))).toBe(true);
+        expect(run?.jobs.find((job) => job.nodeId === 'edit-from-a')?.status).toBe('success');
+    });
+
+    it('sends the edit node instruction with the preset', async () => {
+        tempDir = await mkdtemp(path.join(os.tmpdir(), 'aiwf-'));
+        const graph = createEditScenarioGraph();
+        const input = graph.nodes.find((node) => node.id === 'image-in');
+        const edit = graph.nodes.find((node) => node.id === 'edit-1');
+        if (!input || !edit) {
+            throw new Error('missing edit scenario nodes');
+        }
+        input.data.imageUrl = '/uploads/source.png';
+        edit.data.text = 'make it night';
+
+        const generator: ImageGenerator = {
+            async generate() {
+                throw new Error('generate should not run in this test');
+            },
+            async edit(request) {
+                expect(request.prompt).toBe(`${DEMO_PRESET.mainPrompt}\nmake it night`);
+                return { bytes: MOCK_PNG, mimeType: 'image/png' };
+            },
+        };
+
+        const store = createMemoryRunStore();
+        store.create({
+            runId: 'run-edit-prompt',
+            graph,
+            presetId: 'preset-demo',
+            status: 'queued',
+            jobs: seedRunJobs(graph),
+        });
+
+        await executeRun(
+            {
+                store,
+                generator,
+                results: createFileResultStore(tempDir),
+                images: {
+                    async read() {
+                        return { bytes: MOCK_PNG, mimeType: 'image/png' };
+                    },
+                },
+                timeoutMs: 5_000,
+            },
+            'run-edit-prompt',
+        );
+
+        const run = store.get('run-edit-prompt');
+        expect(run?.status).toBe('completed');
     });
 
     it('fails generate jobs when the prompt is empty', async () => {

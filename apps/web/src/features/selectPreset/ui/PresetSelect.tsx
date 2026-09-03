@@ -9,7 +9,7 @@ export function PresetSelect() {
         <label className='flex items-center gap-2 text-sm'>
             Preset
             <select
-                className='rounded-md border border-slate-600 bg-slate-900 px-2 py-1'
+                className='rounded-md border border-slate-600 bg-slate-900 px-2 py-1 hover:bg-slate-800'
                 value={presetId}
                 onChange={(event) => setPresetId(event.target.value)}
             >

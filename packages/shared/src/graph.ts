@@ -1,4 +1,4 @@
-import { canConnectKinds, canConnectPorts, NODE_PORTS } from './ports';
+import { canConnectKinds, canConnectPorts, inputPorts, NODE_PORTS } from './ports';
 import type { GraphEdge, GraphNode, NodeKind, PortType, WorkflowGraph } from './types';
 
 const PROMPT_X = 80;
@@ -45,6 +45,29 @@ export function incomingEdges(graph: WorkflowGraph, nodeId: string): GraphEdge[]
     return graph.edges.filter((item) => item.target === nodeId);
 }
 
+export function followImageProducer(graph: WorkflowGraph, nodeId: string): GraphNode | null {
+    const seen = new Set<string>();
+    let currentId = nodeId;
+    while (true) {
+        if (seen.has(currentId)) {
+            return null;
+        }
+        seen.add(currentId);
+        const node = findNode(graph, currentId);
+        if (!node) {
+            return null;
+        }
+        if (node.kind !== 'result') {
+            return node;
+        }
+        const incoming = incomingEdges(graph, node.id).find((edge) => edge.targetPort === 'image');
+        if (!incoming) {
+            return null;
+        }
+        currentId = incoming.source;
+    }
+}
+
 export function isEdgeCompatible(graph: WorkflowGraph, edge: GraphEdge): boolean {
     const source = findNode(graph, edge.source);
     const target = findNode(graph, edge.target);
@@ -61,7 +84,7 @@ export function isEdgeCompatible(graph: WorkflowGraph, edge: GraphEdge): boolean
 
 function hasPort(kind: NodeKind, side: 'input' | 'output', port: PortType): boolean {
     const spec = NODE_PORTS[kind];
-    const list = side === 'input' ? spec.inputs : spec.outputs;
+    const list = side === 'input' ? inputPorts(kind) : spec.outputs;
     return list.includes(port);
 }
 

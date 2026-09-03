@@ -4,8 +4,10 @@ import {
     explainUnsatisfied,
     findNode,
     findPreset,
+    followImageProducer,
     getReadyWorkerIds,
     incomingEdges,
+    isWorkerKind,
     structurallyRunnableWorkers,
     type JobSnapshot,
     type WorkflowGraph,
@@ -43,14 +45,15 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<void
             const waiting = current.jobs.filter((job) => job.status === 'queued' || job.status === 'idle');
             const noneStarted = current.jobs.every((job) => job.status !== 'running' && job.status !== 'success');
             if (waiting.length > 0 && noneStarted) {
+                const graph = current.graph;
                 setJobs(
                     deps.store,
                     current,
                     waiting.map((job) => job.nodeId),
                     (job) => {
-                        const node = findNode(current.graph, job.nodeId);
+                        const node = findNode(graph, job.nodeId);
                         const error = node
-                            ? (explainUnsatisfied(current.graph, node) ?? 'Зависимости не выполнены')
+                            ? (explainUnsatisfied(graph, node) ?? 'Зависимости не выполнены')
                             : 'Нода отсутствует в графе';
                         return { ...job, status: 'error', error };
                     },
@@ -150,11 +153,15 @@ async function executeWorker(deps: ExecuteDeps, runId: string, nodeId: string): 
 }
 
 function collectUserPrompt(graph: WorkflowGraph, workerId: string): string {
-    const texts = incomingEdges(graph, workerId).map((edge) => {
-        const source = findNode(graph, edge.source);
-        return source?.data.text ?? '';
-    });
-    return texts.join('\n');
+    const worker = findNode(graph, workerId);
+    const fromEdges = incomingEdges(graph, workerId)
+        .filter((edge) => edge.targetPort === 'text')
+        .map((edge) => findNode(graph, edge.source)?.data.text ?? '');
+    const local = worker?.data.text ?? '';
+    return [...fromEdges, local]
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0)
+        .join('\n');
 }
 
 async function loadSourceImage(deps: ExecuteDeps, run: RunRecord, workerId: string) {
@@ -171,15 +178,18 @@ function collectIncomingImageUrl(graph: WorkflowGraph, jobs: JobSnapshot[], work
     if (!edge) {
         return null;
     }
-    const source = findNode(graph, edge.source);
-    if (!source) {
+    const producer = followImageProducer(graph, edge.source);
+    if (!producer) {
         return null;
     }
-    if (source.kind === 'imageInput') {
-        return source.data.imageUrl ?? null;
+    if (producer.kind === 'imageInput') {
+        return producer.data.imageUrl ?? null;
     }
-    const job = jobs.find((item) => item.nodeId === source.id);
-    return job?.resultUrl ?? source.data.imageUrl ?? null;
+    if (isWorkerKind(producer.kind)) {
+        const job = jobs.find((item) => item.nodeId === producer.id);
+        return job?.resultUrl ?? producer.data.imageUrl ?? null;
+    }
+    return producer.data.imageUrl ?? null;
 }
 
 function setJobs(store: RunStore, run: RunRecord, nodeIds: string[], update: (job: JobSnapshot) => JobSnapshot): RunRecord {

@@ -13,6 +13,17 @@ body {
     font-family: Inter, system-ui, sans-serif;
 }
 
+button:not(:disabled),
+select,
+input[type='file']:not(:disabled) {
+    cursor: pointer;
+}
+
+button:disabled,
+input[type='file']:disabled {
+    cursor: not-allowed;
+}
+
 .react-flow__controls {
     overflow: hidden;
     border-radius: 0.5rem;

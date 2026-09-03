@@ -13,7 +13,7 @@ export function RunToolbar() {
                 type='button'
                 onClick={() => start()}
                 disabled={isStarting}
-                className='rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50'
+                className='rounded-lg border border-slate-600 bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-indigo-500'
             >
                 {isStarting ? 'Запуск…' : 'Запустить'}
             </button>
@@ -23,7 +23,7 @@ export function RunToolbar() {
                     key={node.id}
                     type='button'
                     onClick={() => retry(node.id)}
-                    className='rounded-lg border border-red-400 px-3 py-1 text-xs text-red-200'
+                    className='rounded-lg border border-red-400 px-3 py-1 text-xs text-red-200 hover:bg-slate-800'
                 >
                     Повторить {node.id}
                 </button>

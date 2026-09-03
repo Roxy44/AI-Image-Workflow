@@ -30,7 +30,7 @@ export function ImageInputNode({ id, data }: NodeProps<WorkflowNode>) {
                 type='file'
                 accept='image/*'
                 disabled={busy}
-                className='block w-full text-xs'
+                className='block w-full text-xs file:cursor-pointer'
                 onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) {

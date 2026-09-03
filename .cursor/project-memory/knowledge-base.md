@@ -11,19 +11,20 @@
 - Тестовое: AI Image Workflow, лимит 8–12 часов. Неуспевшее — рабочая основа + README.
 - Canvas в скоупе: xyflow (add / move / connect / delete / branching / selection). Свой canvas engine не пишем.
 - Статусы run: polling `GET /runs/:id`.
-- Edit Image / Image Input: сценарий 2 по брифу описан в README до API заказчика. Ноды и upload уже есть как прототип контракта; боевой edit не сдаём.
+- Edit Image / Image Input: сценарий 2 живой на Cloudflare (`flux-2-dev`). Edit: обязательный вход `image`, опциональный `text`. Result: вход и выход `image` (можно тянуть в следующий Edit).
 - Сценарий 1 и обязательное ветвление Prompt → Generate A/B → Result A/B — must.
 - Job (нода): idle / queued / running / success / error. Run (прогон): queued / running / completed / failed. Маппинг обязателен.
 - Preset — сущность модели (id, name, mainPrompt, negativePrompt, references), не логика UI. Редактор preset не нужен, выбор — нужен.
 - Движок графа и request builder живут вне React-виджетов (FSD + проверка «понимания графа»).
 - Layout: yarn workspaces `apps/web` (FSD) + `apps/api` + `packages/shared`.
-- AI: адаптер mock по умолчанию. Live Fal — опциональная проверка Generate до контракта заказчика. Ключ: `IMAGE_API_KEY` или `FAL_KEY` в `.env`.
+- AI: прод — Cloudflare Workers AI (`IMAGE_PROVIDER=cloudflare`). Mock — локально и в тестах без ключа. Других провайдеров нет.
+- Граф можно сохранить/загрузить файлом `ai-image-workflow.json` (Импорт/Экспорт). Картинки uploads/results с файла не переезжают на другую машину.
 
 ## Внешние системы и интеграции
 
 | Система              | Роль                           | Что важно помнить                                                                                |
 | -------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Image-generation API | text→image + edit              | Live: Fal. Ключ только на backend (`.env`). Контракт заказчика пока не подключён.               |
+| Image-generation API | text→image + edit              | Прод: Cloudflare. Mock без ключа. Дневной лимит 10k neurons (00:00 UTC). |
 
 ## Ограничения и «так исторически»
 

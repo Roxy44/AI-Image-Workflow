@@ -1,4 +1,4 @@
-import { findNode, incomingEdges } from './graph';
+import { findNode, followImageProducer, incomingEdges } from './graph';
 import { isWorkerKind, NODE_PORTS } from './ports';
 import type { GraphNode, JobSnapshot, JobStatus, RunStatus, WorkflowGraph } from './types';
 
@@ -66,16 +66,21 @@ export function explainUnsatisfied(
         if (!source) {
             return 'Источник связи не найден';
         }
-        if (source.kind === 'prompt' && !source.data.text?.trim()) {
+        if (source.kind === 'prompt' && !source.data.text?.trim() && NODE_PORTS[node.kind].inputs.includes(edge.targetPort)) {
             return 'Заполните текст в Prompt';
         }
-        if (source.kind === 'imageInput' && !source.data.imageUrl) {
+
+        const producer = followImageProducer(graph, source.id);
+        if (!producer) {
+            return source.kind === 'result' ? 'Подключите изображение к Result' : 'Источник связи не найден';
+        }
+        if (producer.kind === 'imageInput' && !producer.data.imageUrl) {
             return 'Загрузите изображение в Image Input';
         }
-        if (isWorkerKind(source.kind) && jobs.get(source.id)?.status !== TERMINAL_OK) {
+        if (isWorkerKind(producer.kind) && jobs.get(producer.id)?.status !== TERMINAL_OK) {
             return 'Сначала должна успешно выполниться предыдущая нода';
         }
-        if (!isWorkerKind(source.kind) && source.kind !== 'prompt' && source.kind !== 'imageInput') {
+        if (!isWorkerKind(producer.kind) && producer.kind !== 'prompt' && producer.kind !== 'imageInput') {
             return 'Зависимости не выполнены';
         }
     }

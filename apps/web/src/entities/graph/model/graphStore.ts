@@ -8,6 +8,7 @@ import {
     type JobSnapshot,
     type NodeKind,
     type PortType,
+    type WorkflowGraph,
 } from '@aiwf/shared';
 
 import { toFlowEdges, toFlowNodes, toWorkflowGraph } from './serialize';
@@ -23,8 +24,10 @@ type GraphState = {
     setPresetId: (presetId: string) => void;
     setNodeData: (nodeId: string, data: Partial<WorkflowNodeData>) => void;
     addNode: (kind: NodeKind) => void;
+    loadGraph: (graph: WorkflowGraph, presetId: string) => void;
     applyJobResults: (jobs: JobSnapshot[]) => void;
     graphPayload: () => ReturnType<typeof toWorkflowGraph>;
+    sessionKey: number;
 };
 
 const NODE_SPAWN_X = 120;
@@ -38,6 +41,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     nodes: toFlowNodes(initial),
     edges: toFlowEdges(initial),
     presetId: 'preset-demo',
+    sessionKey: 0,
     onNodesChange(changes) {
         set({ nodes: applyNodeChanges(changes, get().nodes) });
     },
@@ -67,9 +71,17 @@ export const useGraphStore = create<GraphState>((set, get) => ({
             id,
             type: kind,
             position: { x: NODE_SPAWN_X + offset * NODE_SPAWN_GAP, y: NODE_SPAWN_Y + offset * NODE_SPAWN_GAP },
-            data: kind === 'prompt' ? { text: '' } : {},
+            data: kind === 'prompt' || kind === 'editImage' ? { text: '' } : {},
         };
         set({ nodes: [...get().nodes, node] });
+    },
+    loadGraph(graph, presetId) {
+        set({
+            nodes: toFlowNodes(graph),
+            edges: toFlowEdges(graph),
+            presetId,
+            sessionKey: get().sessionKey + 1,
+        });
     },
     applyJobResults(jobs) {
         const byId = new Map(jobs.map((job) => [job.nodeId, job]));

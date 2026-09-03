@@ -11,10 +11,16 @@ export function useWorkflowRun() {
     const graphPayload = useGraphStore((state) => state.graphPayload);
     const presetId = useGraphStore((state) => state.presetId);
     const applyJobResults = useGraphStore((state) => state.applyJobResults);
+    const sessionKey = useGraphStore((state) => state.sessionKey);
 
     const start = useMutation({
         mutationFn: () => createRun(graphPayload(), presetId),
     });
+    const resetStart = start.reset;
+
+    useEffect(() => {
+        resetStart();
+    }, [sessionKey, resetStart]);
 
     const runId = start.data?.runId ?? null;
 

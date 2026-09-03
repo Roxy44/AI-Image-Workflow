@@ -21,4 +21,13 @@ describe('typed ports', () => {
         expect(canConnectKinds('prompt', 'generateImage')).toBe(true);
         expect(canConnectKinds('generateImage', 'result')).toBe(true);
     });
+
+    it('allows an optional prompt and a previous image into edit', () => {
+        expect(canConnectKinds('prompt', 'editImage')).toBe(true);
+        expect(canConnectKinds('imageInput', 'editImage')).toBe(true);
+        expect(canConnectKinds('generateImage', 'editImage')).toBe(true);
+        expect(canConnectKinds('editImage', 'editImage')).toBe(true);
+        expect(canConnectKinds('result', 'editImage')).toBe(true);
+        expect(canConnectKinds('result', 'result')).toBe(true);
+    });
 });

@@ -16,7 +16,21 @@ yarn dev
 - UI: http://localhost:5173
 - API: http://127.0.0.1:3001
 
-По умолчанию `IMAGE_PROVIDER=mock`: Generate даёт красный пиксель, Edit — зелёный. Так проверяют граф, джобы и Result без ключа.
+По умолчанию `IMAGE_PROVIDER=mock`: Generate даёт красный пиксель, Edit — зелёный. Так проверяют граф, джобы и Result без ключа. Боевой провайдер — `IMAGE_PROVIDER=cloudflare`.
+
+**Импорт / Экспорт** рядом с названием: файл `ai-image-workflow.json` (ноды, рёбра, preset). Экспорт сохраняет граф, импорт загружает его обратно для правки. Загруженные `/uploads` и `/results` живут только на этой машине. Готовую картинку с ноды Result можно скачать кнопкой **Сохранить**.
+
+### Порты нод
+
+| Нода | Входы | Выходы |
+| --- | --- | --- |
+| Prompt | — | `text` |
+| Image Input | — | `image` |
+| Generate | `text` (обязателен) | `image` |
+| Edit | `image` (обязателен), `text` сверху (необязателен: пусто, поле в ноде или ребро от Prompt) | `image` |
+| Result | `image` | `image` (продолжение в Edit / другой Result) |
+
+Несовместимые рёбра (`text` ↔ `image`) режутся. Типичное продолжение идеи: **Generate → Result → Edit → Result**.
 
 ### Как прогнать обязательный сценарий
 
@@ -42,45 +56,47 @@ yarn dev
 | Loading / error / timeout | Сделано: статусы на ноде; AI-вызов обрывается по `AI_TIMEOUT_MS` |
 | Ключ не на фронте | Сделано |
 | Canvas (xyflow): add / move / connect / delete / selection / branching | Сделано (звезда) |
-| Одна реальная генерация Browser → Backend → AI → Result | Адаптер готов. До API заказчика: mock или опционально Fal (см. ниже) |
-| Сценарий 2 Image Input → Edit → Result | Контракт и прототип нод есть; живой edit ждёт API заказчика — подход ниже |
+| Одна реальная генерация Browser → Backend → AI → Result | Сделано: Cloudflare Workers AI; mock без ключа |
+| Сценарий 2 Image Input → Edit → Result | Сделано: upload, Edit (image + опциональный prompt), Result с выходом дальше в Edit |
 
 ## Сценарий 2: Image Input и Edit Image
 
-В брифе Edit — только если image API умеет редактирование, иначе достаточно описания. Документации заказчика ещё нет, поэтому **боевой сценарий 2 не сдаём как must**. Подход уже заложен в модели, его можно доключить, когда появится контракт.
+В брифе Edit нужен, если image API умеет редактирование. Cloudflare `flux-2-dev` умеет, поэтому сценарий живой: загрузка файла или картинка с Generate/Result → Edit → Result.
 
-**Граф.** `Image Input` (файл → порт `image`) → `Edit Image` (job, вход `image`, выход `image`) → `Result` (превью). Prompt к Edit не обязателен по контракту портов: правка идёт от исходной картинки плюс текст из preset / request builder, как у Generate.
+**Граф.** `Image Input` (файл → порт `image`) и/или выход Generate/Result → `Edit Image` (job) → `Result`. У Edit слева два входа: сверху необязательный `text`, снизу обязательный `image`. У Result есть выход `image`, чтобы дорабатывать результат ещё одним Edit.
 
-**Image Input.** Пользователь выбирает файл в ноде. Фронт шлёт data URL на `POST /api/uploads`, backend кладёт байты на диск и возвращает `/uploads/:id`. В граф пишется этот URL, не blob из браузера. Несовместимые связи (`text` ↔ `image`) уже запрещены.
+**Image Input.** Пользователь выбирает файл в ноде. Фронт шлёт data URL на `POST /api/uploads`, backend кладёт байты на диск и возвращает `/uploads/:id`. В граф пишется этот URL, не blob из браузера.
 
-**Edit Image.** Это тот же класс job, что Generate: queued → running → success / error, timeout, retry одной ноды. Планировщик не стартует Edit, пока на входящем ребре нет картинки (загрузка или выход предыдущего job). Исполнитель читает файл через порт `ImageReader` и вызывает `ImageGenerator.edit(request, sourceImage)`.
+**Edit Image.** Тот же класс job, что Generate: queued → running → success / error, timeout, retry одной ноды. Планировщик не стартует Edit, пока нет картинки. Текст правки: поле в ноде и/или ребро от Prompt; пустой текст допустим (уйдёт preset). Исполнитель читает файл через `ImageReader` и вызывает `ImageGenerator.edit`.
 
-**AI-адаптер.** Узкий порт `generate` / `edit` на backend. Пока нет API заказчика:
+**AI-адаптер.** Узкий порт `generate` / `edit` на backend:
 
-- `IMAGE_PROVIDER=mock` — Edit возвращает зелёный 1×1 PNG, чтобы прогнать граф без ключа;
-- live-адаптер сейчас заточен под Fal (`flux/dev/image-to-image`) как временная проверка механизма, не как контракт сдачи.
+- `IMAGE_PROVIDER=cloudflare` — прод: Generate `flux-1-schnell`, Edit `flux-2-dev`;
+- `IMAGE_PROVIDER=mock` — без ключа: красный/зелёный 1×1 PNG.
 
-**Когда дадут API заказчика.** В `liveImageGenerator` заменить URL и тело `edit` на их img2img / inpaint (исходник как data URI или upload, плюс prompt / negative / references из builder). Если edit в API не будет — сценарий 2 остаётся этим README, UI-ноды можно не показывать проверяющим.
+Других провайдеров в репозитории нет. Если понадобится API заказчика — новый адаптер рядом с Cloudflare, тот же порт `ImageGenerator`.
 
-Собрать граф вручную: кнопки **+ Image Input**, **+ Edit**, **+ Result** в шапке, соединить image-порты, загрузить файл, Run.
+Собрать граф: кнопки **+ Image Input**, **+ Edit**, **+ Result**, соединить порты, при необходимости загрузить файл, Run.
 
-## Живая генерация до API заказчика (опционально)
+## Cloudflare Workers AI
 
-Чтобы увидеть настоящие картинки на Generate, не дожидаясь заказчика:
-
-1. Ключ: [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys).
-2. `.env` в корне (файл в git не попадает):
+1. [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers AI** → **Use REST API**.
+2. Создай токен **Workers AI** (Read + Edit) и скопируй **Account ID**.
+3. В корневом `.env`:
 
 ```env
-IMAGE_PROVIDER=live
-IMAGE_API_KEY=вставьте_ключ
+IMAGE_PROVIDER=cloudflare
+CLOUDFLARE_ACCOUNT_ID=твой_account_id
+CLOUDFLARE_API_TOKEN=твой_токен
 ```
 
-3. Перезапустить `yarn dev`. Generate → `fal-ai/flux/schnell`. Один прогон с двумя Generate = два платных запроса (порядка долей цента).
+4. Перезапусти `yarn dev`. Generate → `flux-1-schnell`. Edit → `flux-2-dev` (исходник как `input_image_0`, лучше ≤ 512×512).
 
-`FAL_KEY` сработает, если `IMAGE_API_KEY` пуст. Preset-референсы Flux Schnell не принимает (text→image): `references[]` собираются в builder и уйдут в запрос, когда контракт заказчика это опишет. Negative prompt для Fal дописывается в текст как `Avoid: …`.
+Бесплатный план: 10 000 neurons в сутки (сброс 00:00 UTC). 429 «capacity» — очередь, имеет смысл подождать; исчерпанный лимит — нет. Параллельные Generate A/B плюс Edit съедают квоту быстро.
 
-Если баланс Fal пуст (`403 TOP_UP`) или ключа нет — оставь `IMAGE_PROVIDER=mock`.
+Без ключа — `IMAGE_PROVIDER=mock`.
+
+Negative prompt дописывается в текст как `Avoid: …`. Preset-референсы text→image модели не принимают: они уже в builder и поедут, когда контракт заказчика это опишет.
 
 ## Проверки
 
@@ -93,4 +109,4 @@ yarn build
 
 ## Вне скоупа брифа
 
-Авторизация, сохранение графа между сессиями, деплой, Preset Editor, секции 1–5 задания (критерии оценки / формат сдачи) в исходном файле не было.
+Авторизация, сохранение графа в браузере между сессиями (есть только файл Импорт/Экспорт), деплой, Preset Editor, секции 1–5 задания (критерии оценки / формат сдачи) в исходном файле не было.

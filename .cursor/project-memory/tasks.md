@@ -7,17 +7,19 @@
 
 ## В работе
 
-- [ ] Дождаться image API заказчика и подставить контракт в live-адаптер (generate + edit, references)
+- (пусто)
 
 ## Ждёт решения
 
 - [ ] Есть ли секции 1–5 брифа (оценка, формат сдачи)?
+- [ ] Нужен ли снимок канвы в PNG (потребуется пакет вроде html-to-image)?
 
 ## Техдолг и follow-up
 
 | Что | Где | Почему отложено |
 | --- | --- | --- |
-| Контракт заказчика вместо Fal | apps/api/src/infra/liveImageGenerator.ts | Документации нет; Fal только чтобы прогнать механизм |
-| Preset-референсы в generate | Fal flux/schnell | Модель text→image; в builder references уже есть |
-| Сценарий 2 как must | README | Бриф: Edit только если API умеет; пока описание подхода |
+| API заказчика | новый адаптер ImageGenerator | Документации нет; прод сейчас Cloudflare |
+| Preset-референсы в generate | text→image модели | В builder references уже есть, модели их не принимают |
+| Картинки внутри JSON-экспорта | import/export | Сейчас в файле только URL `/uploads` и `/results` |
+| Очередь Generate A/B не параллельно | executeRun | Параллель по брифу; на бесплатном Cloudflare чаще 429 |
 | Полноценный Preset Editor | — | В тестовом не нужен |

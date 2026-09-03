@@ -8,7 +8,7 @@ import { registerPresetRoutes } from './http/presetsRoutes';
 import { registerRunRoutes } from './http/runsRoutes';
 import { registerUploadRoutes } from './http/uploadsRoutes';
 import { createDiskImageReader } from './infra/diskImageReader';
-import { createLiveImageGenerator } from './infra/liveImageGenerator';
+import { createCloudflareImageGenerator } from './infra/cloudflareImageGenerator';
 import { createMockImageGenerator } from './infra/mockImageGenerator';
 import { createFileResultStore } from './infra/resultStore';
 import { createMemoryRunStore } from './infra/runStore';
@@ -64,8 +64,8 @@ export async function buildApp(config: ApiConfig) {
 }
 
 function createGenerator(config: ApiConfig): ImageGenerator {
-    if (config.imageProvider === 'live') {
-        return createLiveImageGenerator(config);
+    if (config.imageProvider === 'cloudflare') {
+        return createCloudflareImageGenerator(config);
     }
     return createMockImageGenerator();
 }

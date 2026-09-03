@@ -13,5 +13,8 @@ export function getRun(runId: string): Promise<RunSnapshot> {
 }
 
 export function retryRunNode(runId: string, nodeId: string): Promise<RunSnapshot> {
-    return apiJson(`/api/runs/${runId}/nodes/${nodeId}/retry`, { method: 'POST' });
+    return apiJson(`/api/runs/${runId}/nodes/${nodeId}/retry`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
 }
